@@ -9,15 +9,16 @@ import (
 )
 
 func TestCreate(t *testing.T){
-	keyPair, err := Create("", "", 5 * time.Hour)
+	keyPair, err := Create("", "", 896, 5 * time.Hour)
 	if err != nil {
 		fmt.Println(err)
 		t.Error(err)
 	}
-	//for key, item := range keyPair{
-	//	fmt.Println(key, string(item))
-	//}
-	myBytes, err := Encrypt([]byte("encrypt already!"), [][]byte{keyPair["public"]})
+	for key, item := range keyPair{
+		fmt.Println(key, string(item))
+	}
+	s := []byte("encrypt already!")
+	myBytes, err := Encrypt(s, [][]byte{keyPair["public"]})
 	if err != nil{
 		t.Error("Ecryption error: ", err)
 	}
@@ -27,7 +28,7 @@ func TestCreate(t *testing.T){
 		fmt.Println("decrypt error : ", err)
 	}
 	//fmt.Println("decrypted: ", string(myBytes))
-	if !bytes.Equal(myBytes, []byte("encrypt already!")) {
+	if !bytes.Equal(myBytes, s) {
 		t.Error("Decrypting finished with error: ", myBytes)
 	}
 }

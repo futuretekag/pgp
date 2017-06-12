@@ -22,9 +22,13 @@ const (
 	sha224    = 11
 )
 
-func Create(name, email string, expiry time.Duration) (map[string][]byte, error){
+func Create(name, email string, rsaBits int, expiry time.Duration) (map[string][]byte, error){
 	// Create the key
-	key, err := openpgp.NewEntity(name, "", email, nil)
+	if rsaBits < 10{
+		rsaBits = 1096
+	}
+	cfg := &packet.Config{RSABits:rsaBits}
+	key, err := openpgp.NewEntity(name, "", email, cfg)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -54,7 +58,7 @@ func Create(name, email string, expiry time.Duration) (map[string][]byte, error)
 			uint8(packet.CompressionZIP),
 		}
 
-		err := id.SelfSignature.SignUserId(id.UserId.Id, key.PrimaryKey, key.PrivateKey, nil)
+		err := id.SelfSignature.SignUserId(id.UserId.Id, key.PrimaryKey, key.PrivateKey, cfg)
 		if err != nil {
 			fmt.Println(err)
 			return nil, err
@@ -64,7 +68,7 @@ func Create(name, email string, expiry time.Duration) (map[string][]byte, error)
 	// Self-sign the Subkeys
 	for _, subkey := range key.Subkeys {
 		subkey.Sig.KeyLifetimeSecs = &dur
-		err := subkey.Sig.SignKey(subkey.PublicKey, key.PrivateKey, nil)
+		err := subkey.Sig.SignKey(subkey.PublicKey, key.PrivateKey, cfg)
 		if err != nil {
 			fmt.Println(err)
 			return nil, err
