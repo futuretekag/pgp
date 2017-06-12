@@ -5,7 +5,32 @@ import (
 	"fmt"
 	"bytes"
 	//"golang.org/x/crypto/openpgp"
+	"time"
 )
+
+func TestCreate(t *testing.T){
+	keyPair, err := Create("", "", 5 * time.Hour)
+	if err != nil {
+		fmt.Println(err)
+		t.Error(err)
+	}
+	//for key, item := range keyPair{
+	//	fmt.Println(key, string(item))
+	//}
+	myBytes, err := Encrypt([]byte("encrypt already!"), [][]byte{keyPair["public"]})
+	if err != nil{
+		t.Error("Ecryption error: ", err)
+	}
+	//fmt.Println("encrypted: ", string(myBytes))
+	myBytes, err = Decrypt(myBytes, nil, keyPair["private"])
+	if err != nil{
+		fmt.Println("decrypt error : ", err)
+	}
+	//fmt.Println("decrypted: ", string(myBytes))
+	if !bytes.Equal(myBytes, []byte("encrypt already!")) {
+		t.Error("Decrypting finished with error: ", myBytes)
+	}
+}
 
 func TestReadIdentity(t *testing.T) {
 	myBytes, err := ReadIdentity([][]byte{[]byte(_publicKey), []byte(_pubKey2), []byte(_pubKey3)})
