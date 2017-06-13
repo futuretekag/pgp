@@ -99,7 +99,6 @@ func Create(name, email string, rsaBits int, expiry time.Duration) (map[string][
 	return map[string][]byte{"public":public, "private":private}, nil
 }
 
-// TODO make it work
 func Sign(msg []byte, passphrase []byte, privKey [][]byte)([]byte, error){
 	entitylist, err := readKeys(privKey);
 	if err != nil {
@@ -108,26 +107,52 @@ func Sign(msg []byte, passphrase []byte, privKey [][]byte)([]byte, error){
 	input := new(bytes.Buffer)
 	input.Write(msg)
 	output := new(bytes.Buffer)
-	for _, e := range entitylist {
-		err = e.PrivateKey.Decrypt(passphrase)
-		if err != nil {
-			return nil, err
+
+	// Decrypt private key using passphrase
+	if passphrase != nil{
+		for _, entity := range entitylist {
+			if entity.PrivateKey != nil && entity.PrivateKey.Encrypted {
+				fmt.Println("Decrypting private key using passphrase")
+				err := entity.PrivateKey.Decrypt(passphrase)
+				if err != nil {
+					return nil, err;
+				}
+			}
+			for _, subkey := range entity.Subkeys {
+				if subkey.PrivateKey != nil && subkey.PrivateKey.Encrypted {
+					err := subkey.PrivateKey.Decrypt(passphrase)
+					if err != nil {
+						return nil, err;
+					}
+				}
+			}
 		}
 	}
+
 	err = openpgp.ArmoredDetachSignText(output, entitylist[0], input, nil)
 	if err != nil {
 		return nil, err
 	}
 	return output.Bytes(), nil
 }
-// TODO make it work
-func Verify(msg []byte, pubKey [][]byte)(bool, error){
+
+var sigWithDataReg = regexp.MustCompile(`-----BEGIN.*\nHash:.*\n\n(.*)\n(-----BEGIN[\s\S]+)`)
+func VerifyBundle(signatureIncludingData []byte, pubkey [][]byte)(bool, error){
+	regexRes := sigWithDataReg.FindAllSubmatch(signatureIncludingData, 1)
+	if len(regexRes)==1 && len(regexRes[0])==3{
+		return Verify(regexRes[0][1], regexRes[0][2], pubkey)
+	}
+	return false, errors.New("couldn't parse the signed data of your input!")
+}
+
+func Verify(data, signature []byte, pubKey [][]byte)(bool, error){
 	entitylist, err := readKeys(pubKey);
 	if err != nil {
 		return false, err
 	}
+
 	input := new(bytes.Buffer)
-	input.Write(msg)
+	input.Write(signature)
 	block, err := armor.Decode(input)
 
 	if block.Type != openpgp.SignatureType {
@@ -145,6 +170,8 @@ func Verify(msg []byte, pubKey [][]byte)(bool, error){
 		return false, errors.New("Invalid signature")
 	}
 	hash := sig.Hash.New()
+	hash.Write(data)
+	//err = entitylist[0].PrimaryKey.VerifyRevocationSignature(sig)
 	err = entitylist[0].PrimaryKey.VerifySignature(hash, sig)
 	if err != nil {
 		return false, err

@@ -4,7 +4,6 @@ import (
 	"testing"
 	"fmt"
 	"bytes"
-	//"golang.org/x/crypto/openpgp"
 	"time"
 )
 
@@ -43,30 +42,104 @@ func TestReadIdentity(t *testing.T) {
 	}
 }
 
+var sigMsg = `
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+abc
+-----BEGIN PGP SIGNATURE-----
+Version: OpenPGP.js v2.4.0
+Comment: http://openpgpjs.org
+
+wowEAQEIABAFAllAQ5kJEGh093C7DiMwAACDPgOAuwtlAzKRLB12Dra/f6aV
+Y3ODcfEkI0TqgLLz8wtHlRfggVWq4ZMJppg9+zMX/Rwv4F0rAQogZHN6JNRn
+GxKiEiQo6u4kqRJ3gfG08I7MkxNDYDpnPrSnEGWvTLgF6tPBfQz4Cr3oF7Ng
+1i4KyI756A==
+=kTsy
+-----END PGP SIGNATURE-----
+`
+var sigMsg2 = `
+-----BEGIN PGP SIGNATURE-----
+Version: OpenPGP.js v2.4.0
+Comment: http://openpgpjs.org
+
+wowEAQEIABAFAllAQ5kJEGh093C7DiMwAACDPgOAuwtlAzKRLB12Dra/f6aV
+Y3ODcfEkI0TqgLLz8wtHlRfggVWq4ZMJppg9+zMX/Rwv4F0rAQogZHN6JNRn
+GxKiEiQo6u4kqRJ3gfG08I7MkxNDYDpnPrSnEGWvTLgF6tPBfQz4Cr3oF7Ng
+1i4KyI756A==
+=kTsy
+-----END PGP SIGNATURE-----
+`
+var sigPub = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xn0EWUBC4QEDgMcsV5c5TraisjkKKJzepRMFPtq9mu6m72VnkCGP3+ixepW6Z9K1
+adu+SyuSdqGBolga8gd+KIufHOJCR8caEKMRYwJLNFfkrgwHb0JmKI44XM7x92aw
+GIwbHRR5LD4PsfZtdQrVFZjVYQsmk+S6p+cAEQEAAc0AwqoEEwEIAC4FAllAQuEJ
+EGh093C7DiMwAhsDBQkAAEZQAhkBBgsJCAcDAgYVCAIJCgsDFgIBAACb5wOAedzU
+55B7FCc0m8QkUGuBRwwyND7CyDTz9+iUzAO5BhSBLDuEECRc0SRMBcoSjYEWTEcM
+XTaudkPRFcGaDIN5ZEwdri3e6UDNdm2RuD24Z9wjM/d08y2YGalDRSDkbc4VFiXr
+dFAq+KuMVCyOFC8fsM59BFlAQuEBA4DY0LOXCRWAJyW0txzUxCeyR+ifg8pAI+xd
+f/3Qg1FUDfdGl4id7mmxOqBIcdJFmWMAxh3ZMKjLfZPt+1q5XLMnpXfV6m5uo408
+tuNLVhKFeCZRD8/iTAVjg8XrIsbUPTibkn76Hw6NP9OMEjfVq38vABEBAAHClQQY
+AQgAGQUCWUBC4QkQaHT3cLsOIzACGwwFCQAARlAAAMo0A4CQbHIhXfCKSR+vjVDq
+cA5C4bUn+WkGfqFaLHMaoYvwVB3QAw+KJ9+6kI9EQyP/PdvH2GPd8kGpNGAYYmQQ
+bHJW1xC7xtZDEsHItH5xhsgpXa/shkScKoMI4DwsYxppacZcMeMfZMv6VNs4QRqS
+0/EU
+=SaJh
+-----END PGP PUBLIC KEY BLOCK-----`
+var sigPriv = `-----BEGIN PGP PRIVATE KEY BLOCK-----
+
+xcDgBFlAQuEBA4DHLFeXOU62orI5Ciic3qUTBT7avZrupu9lZ5Ahj9/osXqVumfS
+tWnbvksrknahgaJYGvIHfiiLnxziQkfHGhCjEWMCSzRX5K4MB29CZiiOOFzO8fdm
+sBiMGx0UeSw+D7H2bXUK1RWY1WELJpPkuqfnABEBAAEAA39fo+1TkpM3pByMw1IJ
+Meh2n7g09YMmQkcGnJpbY2kTpdXFfENKrQ5uFIyoGaaZm1RHlnjOHEh/8kctJ4ZI
+3vEDXwwmX8nN95fNckA2roAI6t8F1ldpoz8uEaj4VH3BSPhM4DlS98W/srsxUVHm
+GeLxAcD/9hwxeL73NnsjfSiXGHqaV8GqJhmz/hCQH2l1JivKNYiBqjOTVI5OiQRA
+iWqAClzaCjhO1qT+VQHAxzQJr2ou1L+LXiTWNh4ZcofKmLxzDpMXxk1ifj/5fQEq
+3VKi/+ZPisjTJnSN9uap5d7XkF7+kUsBwLWHuCuP1uc/Lh3ehhxsH/a1gymlNOnd
+DB8ks+CICgzdeGl2PGEAn4kuRhJFLKBRVae5kptdQ91ciE7NAMKqBBMBCAAuBQJZ
+QELhCRBodPdwuw4jMAIbAwUJAABGUAIZAQYLCQgHAwIGFQgCCQoLAxYCAQAAm+cD
+gHnc1OeQexQnNJvEJFBrgUcMMjQ+wsg08/folMwDuQYUgSw7hBAkXNEkTAXKEo2B
+FkxHDF02rnZD0RXBmgyDeWRMHa4t3ulAzXZtkbg9uGfcIzP3dPMtmBmpQ0Ug5G3O
+FRYl63RQKvirjFQsjhQvH7DHwOAEWUBC4QEDgNjQs5cJFYAnJbS3HNTEJ7JH6J+D
+ykAj7F1//dCDUVQN90aXiJ3uabE6oEhx0kWZYwDGHdkwqMt9k+37Wrlcsyeld9Xq
+bm6jjTy240tWEoV4JlEPz+JMBWODxesixtQ9OJuSfvofDo0/04wSN9Wrfy8AEQEA
+AQADf1lMG6tpImHVvcHgaQ94eqEC3NxV+0bPhNo9jNwEOcrUtbNtVec1+nH0I2+y
+8VeZBR2ce06oq9yi6dbSoKvRHB3fQ0guNbNHIoArqAo9qGs3rgvr8ExPk/l7DzT5
+JoSrwToG/OrEaV2UZFLjXPX8yAEBwPIivepnawFYuOdPpt1fwGc8y9J+SThM8Sl8
+l/OmHWHk/Vp5+Q/mHaGjtQCsg4y2hx6OePwm7lVvAcDlOs8L4JIrXl7SAmFUWDZA
+fIV3yEq9m55E4FyU1cDFGLX8g3H9XLoDkL/8/yQKsnmPvj8YijoSQQG+Ln2CGOTc
+URlHd+cz/CU/jVRTvIumRU7o2ZO8yYCRZ0dRJevjuAROvxp9vcNtgKXtyJBdMcQu
+i3+S0sKVBBgBCAAZBQJZQELhCRBodPdwuw4jMAIbDAUJAABGUAAAyjQDgJBsciFd
+8IpJH6+NUOpwDkLhtSf5aQZ+oVoscxqhi/BUHdADD4on37qQj0RDI/8928fYY93y
+Qak0YBhiZBBsclbXELvG1kMSwci0fnGGyCldr+yGRJwqgwjgPCxjGmlpxlwx4x9k
+y/pU2zhBGpLT8RQ=
+=g+Ey
+-----END PGP PRIVATE KEY BLOCK-----`
 
 func TestSign(t *testing.T) {
-	myBytes, err := Sign([]byte("omfg sign already!"), []byte("abc"), [][]byte{[]byte(privateKey1)})
+	data := []byte("omfg sign already!")
+	myBytes, err := Sign(data, nil, [][]byte{[]byte(sigPriv)})
 	if err != nil{
 		t.Error("Signing error: ", err)
 	}
 	fmt.Println(string(myBytes))
-	//myBytes, err = Decrypt(myBytes, []byte("abc"), []byte(privateKey1))
-	//if err != nil{
-	//	fmt.Println("decrypt error : ", err)
-	//}
-	//if !bytes.Equal(myBytes, []byte("omgfg encrypt already!")) {
-	//	t.Error("Decrypting finished with error: ", myBytes)
-	//}
-
-}
-
-func TestVerify(t *testing.T) {
-	valid, err:= Verify([]byte(_mySignature), [][]byte{[]byte(_publicKey)})
-	if err != nil{
+	valid, err := Verify(data, []byte(myBytes), [][]byte{[]byte(sigPub)})
+	if err != nil || !valid{
 		t.Error("Verify error: ", err)
 	}
-	if !valid{
-		t.Error("Verification invalid")
+}
+
+
+
+func TestVerify(t *testing.T) {
+	valid, err := Verify([]byte("abc"), []byte(sigMsg2), [][]byte{[]byte(sigPub)})
+	if err != nil || !valid{
+		t.Error("Verify error: ", err)
+	}
+	valid, err = VerifyBundle([]byte(sigMsg), [][]byte{[]byte(sigPub)})
+	if err != nil || !valid{
+		t.Error("Verify error: ", err)
 	}
 }
 
