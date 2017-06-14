@@ -1,6 +1,6 @@
-## Easy GO PGP
+# Easy GO PGP
 
-# API
+## API
 ```go
 import (
 "time"
