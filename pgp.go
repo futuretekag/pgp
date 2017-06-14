@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/packet"
 	"time"
+	"io"
 )
 
 const (
@@ -100,14 +101,21 @@ func Create(name, email string, rsaBits int, expiry time.Duration) (map[string][
 }
 
 func Sign(msg []byte, passphrase []byte, privKey [][]byte)([]byte, error){
-	entitylist, err := readKeys(privKey);
-	if err != nil {
-		return nil, err
-	}
 	input := new(bytes.Buffer)
 	input.Write(msg)
 	output := new(bytes.Buffer)
+	err := SignStream(input, output, passphrase, privKey)
+	if err != nil {
+		return nil, err
+	}
+	return output.Bytes(), nil
+}
 
+func SignStream(in io.Reader, out io.Writer, passphrase []byte, privKey [][]byte) error{
+	entitylist, err := readKeys(privKey);
+	if err != nil {
+		return err
+	}
 	// Decrypt private key using passphrase
 	if passphrase != nil{
 		for _, entity := range entitylist {
@@ -115,25 +123,25 @@ func Sign(msg []byte, passphrase []byte, privKey [][]byte)([]byte, error){
 				fmt.Println("Decrypting private key using passphrase")
 				err := entity.PrivateKey.Decrypt(passphrase)
 				if err != nil {
-					return nil, err;
+					return err;
 				}
 			}
 			for _, subkey := range entity.Subkeys {
 				if subkey.PrivateKey != nil && subkey.PrivateKey.Encrypted {
 					err := subkey.PrivateKey.Decrypt(passphrase)
 					if err != nil {
-						return nil, err;
+						return err;
 					}
 				}
 			}
 		}
 	}
 
-	err = openpgp.ArmoredDetachSignText(output, entitylist[0], input, nil)
+	err = openpgp.ArmoredDetachSignText(out, entitylist[0], in, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return output.Bytes(), nil
+	return nil
 }
 
 var sigWithDataReg = regexp.MustCompile(`-----BEGIN.*\nHash:.*\n\n(.*)\n(-----BEGIN[\s\S]+)`)
@@ -210,6 +218,40 @@ func Encrypt(msg []byte, pubKey [][]byte) ([]byte, error) {
 		return nil, err
 	}
 	return armored.Bytes(), nil
+}
+
+func EncryptStream(in io.Reader, out io.Writer,pubKey [][]byte) error{
+	//entitylist, err := readKeys(pubKey);
+	//
+	////entity := entitylist[0]
+	////fmt.Println("public key from armored string:", entity.Identities)
+	//
+	//buf := new(bytes.Buffer)
+	//w, err := openpgp.Encrypt(buf, entitylist, nil, nil, nil)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//_, err = w.Write(msg)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//err = w.Close()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//armored := new(bytes.Buffer)
+	//
+	//w, err = armor.Encode(armored, "PGP MESSAGE", make(map[string]string))
+	//_, err = w.Write(buf.Bytes())
+	//if err != nil {
+	//	return nil, err
+	//}
+	//err = w.Close()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return armored.Bytes(), nil
+	return nil
 }
 
 func Decrypt(msg, passphrase, privKey []byte) ([]byte, error){
