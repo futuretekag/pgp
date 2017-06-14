@@ -8,7 +8,7 @@ import (
 )
 
 func TestCreate(t *testing.T){
-	keyPair, err := Create("", "", 896, 5 * time.Hour)
+	keyPair, err := Create("", "", 896, 80 * time.Second)
 	if err != nil {
 		fmt.Println(err)
 		t.Error(err)
@@ -28,6 +28,71 @@ func TestCreate(t *testing.T){
 	}
 	//fmt.Println("decrypted: ", string(myBytes))
 	if !bytes.Equal(myBytes, s) {
+		t.Error("Decrypting finished with error: ", myBytes)
+	}
+}
+
+//expired pair
+var expiredPublic = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xn0EWUFb5gEDgLgYRmvCS4wE7UBdA0HCI3jaoOLY64jqjs4esau+kM9YM563QLsb
+3aG20Nt6nbXhiOqBQsRsXNEKgc/PwYv5ZzZMsjE10LAPqTiA0smSvnyBvJ6RsHFV
+QQ7XlcYQLo8a/B+R6Kc7oeP/Sz3RbZcsn60AEQEAAc0AwqoEEwEIAC4FAllBW+YJ
+EOQmaVlVQ25OAhsDBQkAAABQAhkBBgsJCAcDAgYVCAIJCgsDFgIBAACpZwOAiEBl
+rWYS91YeZezMWghpaPIhWIjavwAnHHci8KSSkcd4YsQmVQxy3o8JduJX/5I3/xNq
+YL2TyzDp3UcZ0KY+z8YVLqV6R+wlhCWic740pWwuPMqZawQ+BTWRyG0sNNS1gByD
+CTe4Dkwvax3R3Vs7Uc59BFlBW+YBA4DG53jS+QqbJGH45W9oSlZ96kAl1b/qdPPB
+/5kwY/5smuhX3umDJDZcoqJDkAzCY+UpBtZBhMJsWsEXQkNVVtFNOWsM/dEoW8dP
+ED1Awy9Q7P+b1b/+lYKBVtu6GvR+4eHPQVxYrPAvxYU0zhuuTh7JABEBAAHClQQY
+AQgAGQUCWUFb5gkQ5CZpWVVDbk4CGwwFCQAAAFAAAFJ/A4AYHXbYY2AAJgFnFgbq
+aSPAtic/ZfFtdDYsY8FMuoYiEkatJMJL08wroq+PDlFjoDBaZNG7TEuzfShF7bQP
+NOw69ef3P3mqsqll8JrBx/7/RIFwdDE8Eeo2YIDADwDoRHOzh/uGY6QoEYCS1mhS
+nwVP
+=pZke
+-----END PGP PUBLIC KEY BLOCK-----`
+var expiredPrivate = `-----BEGIN PGP PRIVATE KEY BLOCK-----
+
+xcDgBFlBW+YBA4C4GEZrwkuMBO1AXQNBwiN42qDi2OuI6o7OHrGrvpDPWDOet0C7
+G92httDbep214YjqgULEbFzRCoHPz8GL+Wc2TLIxNdCwD6k4gNLJkr58gbyekbBx
+VUEO15XGEC6PGvwfkeinO6Hj/0s90W2XLJ+tABEBAAEAA4Cb47J+PaFLiEB/aEQB
+wyvWgwwKDDYnUrhqwoMhM9XcPow3smYWC5q5/d0Ofd5ezgTqz1qCimBugk71Tchl
+jQ9xiNikt9PhrvCOXegpQOGCZ1y32508lxM1Uvr4WJrqlPHvtjZuFVRpENLF/bZo
+iRYBAcDl59sKu3w7EpiEumg2yqnH/1w7+oI9ua29azB1Lg0bL2IJw0oupWZ4pZm/
+xyx+UUigbSe8VrYoUQHAzP1WjlpMb8pI/+Y/7PWDBfRmEBPr9Kj0ZvokDw0pTCiS
+z2Gi0MW5jGwqsHBolOlNU6eDXb9EBp0BwMM/PIgDn+nwGOo6ZqFUkor2rCJtn8z2
+5ChPFwX+GoWhdEKt6x0muiMRy3VDVyD9sEnABVSQ2ZHZjorNAMKqBBMBCAAuBQJZ
+QVvmCRDkJmlZVUNuTgIbAwUJAAAAUAIZAQYLCQgHAwIGFQgCCQoLAxYCAQAAqWcD
+gIhAZa1mEvdWHmXszFoIaWjyIViI2r8AJxx3IvCkkpHHeGLEJlUMct6PCXbiV/+S
+N/8TamC9k8sw6d1HGdCmPs/GFS6lekfsJYQlonO+NKVsLjzKmWsEPgU1kchtLDTU
+tYAcgwk3uA5ML2sd0d1bO1HHwOAEWUFb5gEDgMbneNL5CpskYfjlb2hKVn3qQCXV
+v+p088H/mTBj/mya6Ffe6YMkNlyiokOQDMJj5SkG1kGEwmxawRdCQ1VW0U05awz9
+0Shbx08QPUDDL1Ds/5vVv/6VgoFW27oa9H7h4c9BXFis8C/FhTTOG65OHskAEQEA
+AQADfREis+gJCH7hHYehzH1Bmj3yxl/8EDKUrMNTz9C5bJvSpJ2dWKSxo/VLFYuY
+h2Df1kg4jJDMbSuEZxkY6VS4xZXOoqOVR5oNpLRV7iH55YEbesbWyb5r+bOdWBtc
+33fI/hgvQN8DFcf+xTHQlplJpWEBwO6oO6xVyWtOZ4jYmwFBHbnyTaV1JzC+KtwS
+s5b3TaAZ2vm+p+dqqMY9iXfLyT1V6gayWOKa5YEFAcDVW7WuOtrUDyIHGl0Lmnex
+UcI1f514Czt6k9qVnNS15asNBmCyALSIm7kdTmkO78cgiOgCfWgh9QHAhkv6ofLC
+WDhDW+2bPY1XzeJq5Pxe1C2aSxNQK7RJ8QxsT5BIjWwidFetivg/UPAVHwDFhENj
+OdGRyMKVBBgBCAAZBQJZQVvmCRDkJmlZVUNuTgIbDAUJAAAAUAAAUn8DgBgddthj
+YAAmAWcWBuppI8C2Jz9l8W10NixjwUy6hiISRq0kwkvTzCuir48OUWOgMFpk0btM
+S7N9KEXttA807Dr15/c/eaqyqWXwmsHH/v9EgXB0MTwR6jZggMAPAOhEc7OH+4Zj
+pCgRgJLWaFKfBU8=
+=1vFN
+-----END PGP PRIVATE KEY BLOCK-----`
+func TestExpiry(t *testing.T){
+	keyPair := map[string][]byte{"public":[]byte(expiredPublic), "private":[]byte(expiredPrivate)}
+	s := []byte("encrypt already!")
+	myBytes, err := Encrypt(s, [][]byte{keyPair["public"]})
+	if err == nil{
+		t.Error("Ecryption error: ", err)
+	}
+	//fmt.Println("encrypted: ", string(myBytes))
+	myBytes, err = Decrypt(myBytes, nil, keyPair["private"])
+	if err == nil{
+		fmt.Println("decrypt error : ", err)
+	}
+	//fmt.Println("decrypted: ", string(myBytes))
+	if bytes.Equal(myBytes, s) {
 		t.Error("Decrypting finished with error: ", myBytes)
 	}
 }
