@@ -343,7 +343,7 @@ func ReadIdentity(pubKey [][]byte) ([]map[string]string, error){
 }
 
 
-func WriteIdentity(privKey []byte, name, comment, email string) (map[string][]byte, error){
+func WriteIdentity(pw, privKey []byte, name, comment, email string) (map[string][]byte, error){
 	entitylist, err := readKeys([][]byte{privKey});
 	if err != nil {
 		return nil, err
@@ -372,6 +372,14 @@ func WriteIdentity(privKey []byte, name, comment, email string) (map[string][]by
 	}
 	res := map[string][]byte{}
 	for _, e := range entitylist {
+		if e.PrivateKey != nil {
+			if pw != nil && e.PrivateKey.Encrypted{
+				err := e.PrivateKey.Decrypt(pw)
+				if err != nil {
+					return nil, err;
+				}
+			}
+		}
 		for _, ii := range e.Identities {
 			ii.UserId.Name = name
 			ii.UserId.Comment = comment
