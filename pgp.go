@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/openpgp/packet"
 	"time"
 	"io"
+	"os"
 )
 
 const (
@@ -285,6 +286,41 @@ func DecryptStream(in io.Reader, out io.Writer, passphrase, privKey []byte) erro
 		return err;
 	}
 	return nil
+}
+
+func ReadPublicKey(passphrase, privKey []byte) ([]byte, error){
+	// Read armored private key into type EntityList
+	// An EntityList contains one or more Entities.
+	// This assumes there is only one Entity involved
+	//fmt.Println(bytes.NewBufferString(privateKey))
+	entitylist, err := openpgp.ReadArmoredKeyRing(bytes.NewBuffer(privKey))
+	if err != nil {
+		return nil, err;
+	}
+	entity := entitylist[0]
+	//fmt.Println("Private key from armored string:", entity.Identities)
+	wrf := func(key *openpgp.Entity) []byte {
+		buf := new(bytes.Buffer)
+		ar, err := armor.Encode(buf, openpgp.PublicKeyType, nil)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+		key.Serialize(ar)
+		ar.Close()
+		return buf.Bytes()
+	}
+	// Decrypt private key using passphrase
+	if entity.PrivateKey != nil {
+		if passphrase != nil && entity.PrivateKey.Encrypted{
+			err := entity.PrivateKey.Decrypt(passphrase)
+			if err != nil {
+				return nil, err;
+			}
+		}
+		return wrf(entity), nil
+	}
+	return nil, os.ErrNotExist
 }
 
 func ReadIdentity(pubKey [][]byte) ([]map[string]string, error){
