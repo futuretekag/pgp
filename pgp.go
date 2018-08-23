@@ -342,6 +342,42 @@ func ReadIdentity(pubKey [][]byte) ([]map[string]string, error){
 	return resultArray, nil
 }
 
+
+func WriteIdentity(pubKey []byte, name, comment, email string) ([]byte, error){
+	entitylist, err := readKeys([][]byte{pubKey});
+	if err != nil {
+		return nil, err
+	}
+	wrf := func(key *openpgp.Entity) []byte {
+		buf := new(bytes.Buffer)
+		ar, err := armor.Encode(buf, openpgp.PublicKeyType, nil)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+		key.Serialize(ar)
+		ar.Close()
+		return buf.Bytes()
+	}
+	for _, e := range entitylist {
+		for _, ii := range e.Identities {
+			ii.UserId.Name = name
+			ii.UserId.Comment = comment
+			ii.UserId.Email = email
+			if comment != "" {
+				comment += " "
+			}
+			ii.UserId.Id = fmt.Sprintf("%s %s<%s>", name, comment, email)
+			err = ii.SelfSignature.SignUserId(ii.UserId.Id, e.PrimaryKey, e.PrivateKey, nil)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return wrf(e), nil
+	}
+	return nil, nil
+}
+
 func readKeys(keys [][]byte) (el openpgp.EntityList, err error) {
 	for _, key := range keys {
 		entitylist, err := openpgp.ReadArmoredKeyRing(bytes.NewBuffer(key))
