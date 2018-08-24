@@ -4,7 +4,7 @@
 ```go
 import (
     "time"
-    "github.com/futuretekag/pgp"
+    "github.com/ProxeusApp/pgp"
 )
 
 func main(){
@@ -24,5 +24,9 @@ func main(){
     err =               pgp.DecryptStream(dataReader, outWriter, passphrase, privateKey)
 
     list, err :=        pgp.ReadIdentity(keys)
+
+    keyPairMap, err :=  pgp.WriteIdentity([]byte("abc"), []byte(privateKey1), "thenewname", "", "newemail")
+
+    pubKeyBytes, err := pgp.ReadPublicKey([]byte("abc"), []byte(sigPriv))
 }
 ```
