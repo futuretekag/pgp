@@ -99,6 +99,22 @@ func Create(name, email string, rsaBits int, expiry time.Duration) (map[string][
 	return map[string][]byte{"public":public, "private":private}, nil
 }
 
+func ValidatePublicKey(publicKey []byte) bool {
+	_, err := ReadIdentity([][]byte{publicKey})
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func ValidatePrivateKey(privateKey []byte) bool {
+	_, err := ReadIdentity([][]byte{privateKey})
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 func Sign(msg []byte, passphrase []byte, privKey [][]byte)([]byte, error){
 	input := new(bytes.Buffer)
 	input.Write(msg)

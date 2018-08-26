@@ -10,6 +10,9 @@ import (
 func main(){
     keyPairMap, err :=  pgp.Create("my name","my@email.com",4096/*rsa bits*/,24*time.Hour)
 
+    ok         :=       pgp.ValidatePrivateKey(privKey)
+    ok         :=       pgp.ValidatePublicKey(publicKey)
+
     valid, err :=       pgp.Verify(data, signature, publicKeys)
     valid, err :=       pgp.VerifyBundle(armoredDataAndSignature, publicKeys)
     valid, err =        pgp.VerifyStream(dataReader, signatureReader, publicKeys)

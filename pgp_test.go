@@ -27,6 +27,59 @@ func TestCreate(t *testing.T){
 	}
 }
 
+func TestValidatePrivateKey(t *testing.T) {
+	ok := ValidatePrivateKey([]byte(privateKey1))
+	if !ok {
+		t.Error("validate priv key error")
+	}
+	ok = ValidatePrivateKey([]byte(expiredPrivate))
+	if !ok {
+		t.Error("validate priv key error")
+	}
+	ok = ValidatePrivateKey([]byte(invalidPrivate))
+	if ok {
+		t.Error("validate priv key error")
+	}
+	ok = ValidatePrivateKey(nil)
+	if ok {
+		t.Error("validate priv key error")
+	}
+	ok = ValidatePrivateKey([]byte(""))
+	if ok {
+		t.Error("validate priv key error")
+	}
+	ok = ValidatePrivateKey([]byte("ablcd"))
+	if ok {
+		t.Error("validate priv key error")
+	}
+}
+func TestValidatePublicKey(t *testing.T) {
+	ok := ValidatePublicKey([]byte(_pubKey2))
+	if !ok {
+		t.Error("validate priv key error")
+	}
+	ok = ValidatePublicKey([]byte(expiredPublic))
+	if !ok {
+		t.Error("validate priv key error")
+	}
+	ok = ValidatePublicKey([]byte(invalidPublic))
+	if ok {
+		t.Error("validate priv key error")
+	}
+	ok = ValidatePublicKey(nil)
+	if ok {
+		t.Error("validate priv key error")
+	}
+	ok = ValidatePublicKey([]byte(""))
+	if ok {
+		t.Error("validate priv key error")
+	}
+	ok = ValidatePublicKey([]byte("ablcd"))
+	if ok {
+		t.Error("validate priv key error")
+	}
+}
+
 //expired pair
 var expiredPublic = `-----BEGIN PGP PUBLIC KEY BLOCK-----
 
@@ -62,6 +115,48 @@ PlilhDPOuc/1NtBr/1ctNMMzZoBkjYDuCkgUrA0i+QUzfkQrmHPJ4ibrDopuA6P4
 i2wh+aWuOwePT1DZUg7MWfjHwOAEW3/XKQEDgKbn7VUnUICxtG3alGmnTEkTRfJv
 mn9Vpx9RekRaBuKv0SHo24l+CHQNIjcaGJKdS7h4RTsB71F/z55FpgZoyvSPy9FM
 hVR2DL25rxHB45gqjik7QtUCrP5yTztEoOgXgUm+W7Gorr6q43kyvllldfUAEQEA
+AQADf1wIHNTMddZQpoXAdf+AEU9mAja5FT7LUviw67NO1OcgPTfud0dsKGsdZtVt
+XUlS1JLmNn5gBb8wz6m8fZOnsNnTDdI+3T9sVO7uUatz+EeQocXiIZxAWoSRSfg2
+W2UN9/mkgLAbZM4Gk4UtOcHuPMEBwNCB/VHpSdis2mQe76JTs+ZXbYUy9ODHFgSe
+IaKBuwdaDHKWd5qNI3gUuK8OGRPnfkke7WCyitmxAcDM7CbW7b18c+22YNc0jb46
+3SWD54fzEmsBCQHl3/M74iit6cNF0bzdR/KYKyE6MD9mgWYGNDJthQG/ffcyUBTi
+O5apO62xSa6Wd06XHg7zurcQCPRMSyJRlyp1MyGMp9CVjbCn6Cnm4uIXSCr6zTzG
+jQ+P9MKVBBgBCAAZBQJbf9cpCRA0U5HrCu8DzQIbDAUJAAAAAgAArQADgFuddhsY
+MIIxgrWGaxbIqCk6nBf5wh0cHH8m5pj+ku3HxgVbIXVNZnJzBQB2+KdCA1W/PsI2
+nGX2+lkiAkymzLkIjXXFa2HwU/k4XHeohTVYH4VS4UyRoDus00xw7+TYNqZiv94b
+jM5uz++Jltj5+HQ=
+=fYLh
+-----END PGP PRIVATE KEY BLOCK-----`
+var invalidPublic = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+xn0EW3/XKQEDgLVGyA9YFjuvlD2eUAeLFp6oE8VWcUssfenoeRebVVH3XQD2+/wM
+Ws2ht1qN96jPX7rZIG84/2zP8/kHmUtmWRPFKdBong4rmpSbZmGiXi1+WePY1lwE
+/vbZzuOTcrJmnKDme7XXBxwpJNKTl7PXqh8AEQEAAc0AwqoEEwEIAC4FAlt/1ykJ
+EDRTkesK7wPNAhsDBQkAAAACAhkBBgsJCAcDAgYVCAIJCgsDFgIBAADtnAOAfqRd
+a2UgiKVupj/oX1S7TnUq3bSucuJOo+erGr7v6cbmEu5xtGSwcQiZIoZIzQs+WKWE
+UXpEWgbir9Eh6NuJfgh0DSI3GhiSnUu4eEU7Ae9Rf8+eRaYGaMr0j8vRTIVUdgy9
+ua8RweOYKo4pO0LVAqz+ck87RKDoF4FJvluxqK6+quN5Mr5ZZXX1ABEBAAHClQQY
+AQgAGQUCW3/XKQkQNFOR6wrvA80CGwwFCQAAAAIAAK0AA4BbnXYbGDCCMYK1hmsW
+yKgpOpwX+cIdHBx/JuaY/pLtx8YFWyF1TWZycwUAdvinQgNVvz7CNpxl9vpZIgJM
+psy5CI11xWth8FP5OFx3qIU1WB+FUuFMkaA7rNNMcO/k2DamYr/eG4zObs/viZbY
++fh0
+=9S0f
+-----END PGP PUBLIC KEY BLOCK-----`
+
+var invalidPrivate = `-----BEGIN PGP PRIVATE KEY BLOCK-----
+
+xcDgBFt/1ykBA4C1RsgPWBY7r5Q9nlAHixaeqBPFVnFLLH3p6HkXm1VR910A9vv8
+DFrNobdajfeoz1+62SBvOP9sz/P5B5lLZlkTxSnQaJ4OK5qUm2Zhol4tflnj2NZc
+BP722c7jk3KyZpyg5nu11wccKSTSk5ez16ofABEBAAEAA349CxHRgPMztCNyQH5o
+m+DJGoZV3I8YJmpcOymT1n37tRW/fmxKawqk1kE9IDN2yCZPcFBow8PXqvotDB5+
+O6W1Qkl9MfkNlTFBeLeRCt9jyTs+vW66HhNsxPu4xMf6wwgxS9DHtq9/21Nj+uFx
+xz0BAcDQP5wjNeW0ewelaY/vmyiAKAoOUQs2TJelKSmcNPi1bGK3T8ifGtmR7pBX
+HT4wiIqwGoxZO0BdnwHA3tfjtkYyll1TQ6gaQNWn0DAnxaoKoOqsOugUNhAd+4hl
+SsJiMpbspjyqiyU33CBx3NwlwjdMY4EBwK7RoSp17WZo8MJTW+sqgmnCiGe7Z3cZ
+OeeQQTMYq30WIdEEBnxIPY9iWE2WflhMW7exp6QlBZrnhb3NAMKqBBMBCAAuBQJb
+f9cpCRA0U5HrCu8DzQIbAwUJAAAAAgIZAQYLCQgHAwIGFQgCCQoLAxYCAQAA7ZwD
+gH6kXWtlIIilbqY/6F9Uu051Kt20rnLiTqPnqxq+7+nG5hLucbRksHEImSKGSM0L
+PlilhDPOuc/1NtBr/1ctNMMzZoBkjYDuCkgUrA0i+QUzfkQrmHPJ4ibrDopuA6P4
 AQADf1wIHNTMddZQpoXAdf+AEU9mAja5FT7LUviw67NO1OcgPTfud0dsKGsdZtVt
 XUlS1JLmNn5gBb8wz6m8fZOnsNnTDdI+3T9sVO7uUatz+EeQocXiIZxAWoSRSfg2
 W2UN9/mkgLAbZM4Gk4UtOcHuPMEBwNCB/VHpSdis2mQe76JTs+ZXbYUy9ODHFgSe
