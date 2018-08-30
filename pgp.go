@@ -211,20 +211,15 @@ func Encrypt(msg []byte, pubKey [][]byte) ([]byte, error) {
 	return armored.Bytes(), nil
 }
 
-func Encrypt2(msg []byte, pubKey [][]byte) (int64, []byte, error) {
-	buf := new(bytes.Buffer)
-	buf.Write(msg)
-	armored := new(bytes.Buffer)
-	n, err := EncryptStream(buf, armored, pubKey)
-	if err != nil {
-		return n, nil, err
-	}
-	return n, armored.Bytes(), nil
-}
-
 func EncryptStream(in io.Reader, out io.Writer, pubKey [][]byte) (int64, error){
 	entitylist, err := readKeys(pubKey)
+	if err != nil {
+		return 0, err
+	}
 	armWr, err := armor.Encode(out, "PGP MESSAGE", make(map[string]string))
+	if err != nil {
+		return 0, err
+	}
 	w1, err := openpgp.Encrypt(armWr, entitylist, nil, nil, nil)
 	if err != nil {
 		return 0, err
