@@ -326,7 +326,6 @@ func TestEncrypt(t *testing.T) {
 	if !bytes.Equal(myBytes, []byte("omfg encrypt already!")) {
 		t.Error("Decrypting finished with error: ", myBytes)
 	}
-
 }
 
 const _publicKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----

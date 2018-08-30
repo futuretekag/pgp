@@ -204,81 +204,89 @@ func Encrypt(msg []byte, pubKey [][]byte) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	buf.Write(msg)
 	armored := new(bytes.Buffer)
-	err := EncryptStream(buf, armored, pubKey)
+	_, err := EncryptStream(buf, armored, pubKey)
 	if err != nil {
 		return nil, err
 	}
 	return armored.Bytes(), nil
 }
 
-func EncryptStream(in io.Reader, out io.Writer, pubKey [][]byte) error{
-	entitylist, err := readKeys(pubKey);
+func Encrypt2(msg []byte, pubKey [][]byte) (int64, []byte, error) {
 	buf := new(bytes.Buffer)
-	w, err := openpgp.Encrypt(buf, entitylist, nil, nil, nil)
+	buf.Write(msg)
+	armored := new(bytes.Buffer)
+	n, err := EncryptStream(buf, armored, pubKey)
 	if err != nil {
-		return err
+		return n, nil, err
 	}
-	_, err = io.Copy(w, in)
+	return n, armored.Bytes(), nil
+}
+
+func EncryptStream(in io.Reader, out io.Writer, pubKey [][]byte) (int64, error){
+	entitylist, err := readKeys(pubKey)
+	armWr, err := armor.Encode(out, "PGP MESSAGE", make(map[string]string))
+	w1, err := openpgp.Encrypt(armWr, entitylist, nil, nil, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	err = w.Close()
+	var n int64
+	n, err = io.Copy(w1, in)
 	if err != nil {
-		return err
+		return n, err
 	}
-	w, err = armor.Encode(out, "PGP MESSAGE", make(map[string]string))
-	_, err = w.Write(buf.Bytes())
+	err = w1.Close()
 	if err != nil {
-		return err
+		return n, err
 	}
-	err = w.Close()
+	err = armWr.Close()
 	if err != nil {
-		return err
+		return n, err
 	}
-	return nil
+	return n, nil
 }
 
 func Decrypt(msg, passphrase, privKey []byte) ([]byte, error){
 	decbuf := bytes.NewBuffer(msg)
 	out := new(bytes.Buffer)
-	err := DecryptStream(decbuf, out, passphrase, privKey)
-	if err != nil{
+	_, err := DecryptStream(decbuf, out, passphrase, privKey)
+	if err != nil {
 		return nil, err
 	}
 	return out.Bytes(), nil
 }
 
-func DecryptStream(in io.Reader, out io.Writer, passphrase, privKey []byte) error{
+func DecryptStream(in io.Reader, out io.Writer, passphrase, privKey []byte) (int64, error) {
+	var n int64
 	entitylist, err := openpgp.ReadArmoredKeyRing(bytes.NewBuffer(privKey))
 	if err != nil {
-		return err;
+		return 0, err
 	}
 	entity := entitylist[0]
 	if err = decryptPrvIfNecessary(passphrase, entity.PrivateKey); err != nil {
-		return err
+		return 0, err
 	}
 
 	for _, subkey := range entity.Subkeys {
 		if err = decryptPrvIfNecessary(passphrase, subkey.PrivateKey); err != nil {
-			return err
+			return 0, err
 		}
 	}
 
 	// Decrypt armor encrypted message using decrypted private key
 	result, err := armor.Decode(in)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	md, err := openpgp.ReadMessage(result.Body, entitylist, nil /* no prompt */, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	_, err = io.Copy(out, md.UnverifiedBody)
+	n, err = io.Copy(out, md.UnverifiedBody)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return n, nil
 }
 
 func decryptPrvIfNecessary(passphrase []byte, priv *packet.PrivateKey) error {
