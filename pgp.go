@@ -285,7 +285,7 @@ func DecryptStream(in io.Reader, out io.Writer, passphrase, privKey []byte) (int
 }
 
 func decryptPrvIfNecessary(passphrase []byte, priv *packet.PrivateKey) error {
-	if passphrase != nil && priv.Encrypted {
+	if passphrase != nil && priv != nil && priv.Encrypted {
 		err := priv.Decrypt(passphrase)
 		if err != nil {
 			return err
@@ -315,6 +315,11 @@ func ReadPublicKey(passphrase, privKey []byte) ([]byte, error){
 	if entity.PrivateKey != nil {
 		if err = decryptPrvIfNecessary(passphrase, entity.PrivateKey); err != nil {
 			return nil, err
+		}
+		for _, subkey := range entity.Subkeys {
+			if err = decryptPrvIfNecessary(passphrase, subkey.PrivateKey); err != nil {
+				return nil, err
+			}
 		}
 		return wrf(entity), nil
 	}
@@ -373,9 +378,16 @@ func WriteIdentity(pw, privKey []byte, name, comment, email string) (map[string]
 			if err = decryptPrvIfNecessary(pw, e.PrivateKey); err != nil {
 				return nil, err
 			}
+			for _, subkey := range e.Subkeys {
+				if err = decryptPrvIfNecessary(pw, subkey.PrivateKey); err != nil {
+					return nil, err
+				}
+			}
 		} else {
 			return nil, os.ErrInvalid
 		}
+	}
+	for _, e := range entitylist {
 		for _, ii := range e.Identities {
 			ii.UserId.Name = name
 			ii.UserId.Comment = comment
@@ -389,11 +401,21 @@ func WriteIdentity(pw, privKey []byte, name, comment, email string) (map[string]
 				return nil, err
 			}
 		}
-		res["private"] = wrff(e)
-		res["public"] = wrf(e)
+		for _, subkey := range e.Subkeys {
+			err := subkey.Sig.SignKey(subkey.PublicKey, e.PrivateKey, nil)
+			if err != nil {
+				fmt.Println(err)
+				return nil, err
+			}
+		}
+	}
+	if len(entitylist)== 1 {
+		res["private"] = wrff(entitylist[0])
+		res["public"] = wrf(entitylist[0])
 		return res, nil
 	}
-	return nil, nil
+
+	return nil, errors.New("not implemented")
 }
 
 func readKeys(keys [][]byte) (el openpgp.EntityList, err error) {
