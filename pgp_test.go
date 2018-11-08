@@ -1,24 +1,27 @@
 package pgp
 
 import (
-	"testing"
 	"bytes"
+	"crypto/rsa"
+	"testing"
 	"time"
+
+	"golang.org/x/crypto/openpgp"
 )
 
-func TestCreate(t *testing.T){
-	keyPair, err := Create("", "", 896, 80 * time.Second)
+func TestCreate(t *testing.T) {
+	keyPair, err := Create("", "", 896, 80*time.Second)
 	if err != nil {
 		t.Error(err)
 	}
 	s := []byte("encrypt already!")
 	myBytes, err := Encrypt(s, [][]byte{keyPair["public"]})
-	if err != nil{
+	if err != nil {
 		t.Error("Ecryption error: ", err)
 	}
 	//fmt.Println("encrypted: ", string(myBytes))
 	myBytes, err = Decrypt(myBytes, nil, keyPair["private"])
-	if err != nil{
+	if err != nil {
 		t.Error("decrypt error : ", err)
 	}
 	//fmt.Println("decrypted: ", string(myBytes))
@@ -77,6 +80,238 @@ func TestValidatePublicKey(t *testing.T) {
 	ok = ValidatePublicKey([]byte("ablcd"))
 	if ok {
 		t.Error("validate priv key error")
+	}
+}
+
+func TestReadPublickeyWithSigningSubkey(t *testing.T) {
+	passphrase := []byte("testtest")
+	pub, err := ReadPublicKey(passphrase, []byte(signingsubkey))
+	if err != nil {
+		t.Fatal("Couldn't read PrivateKey", err)
+	}
+
+	valid := ValidatePublicKey(pub)
+	if valid != true {
+		t.Fatal("Couldn't correctly validate Publickey")
+	}
+}
+
+func TestWriteIdentityWithSigningSubkey(t *testing.T) {
+	passphrase := []byte("testtest")
+
+	keys, err := WriteIdentity(passphrase, []byte(signingsubkey), "thenewname", "", "newemail")
+	if err != nil {
+		t.Error("Writting identity failed !!!", err)
+	}
+
+	validpub := ValidatePublicKey(keys["public"])
+	if validpub != true {
+		t.Fatal("Couldn't correctly validate Publickey")
+	}
+
+	validpriv := ValidatePrivateKey(keys["private"])
+	if validpriv != true {
+		t.Fatal("Couldn't correctly validate Publickey")
+	}
+}
+
+func TestPrivateKeyEncryptionWithSigningSubkey(t *testing.T) {
+	passphrase := []byte("testtest")
+
+	encryptedBytes, err := EncryptPrivateKeys(string(passphrase), []byte(signingsubkey))
+	if err != nil {
+		t.Fatal("Couldn't encrypt PrivateKey", err)
+	}
+	validpriv := ValidatePrivateKey(encryptedBytes)
+	if validpriv != true {
+		t.Fatal("Couldn't correctly validate Publickey")
+	}
+
+	keys, err := WriteIdentity(passphrase, encryptedBytes, "thenewname", "", "newemail")
+	if err != nil {
+		t.Error("Writting identity failed !!!", err)
+	}
+
+	validpub := ValidatePublicKey(keys["public"])
+	if validpub != true {
+		t.Fatal("Couldn't correctly validate Publickey")
+	}
+
+	validpriv = ValidatePrivateKey(keys["private"])
+	if validpriv != true {
+		t.Fatal("Couldn't correctly validate Publickey")
+	}
+}
+
+var signingsubkey = `-----BEGIN PGP PRIVATE KEY BLOCK-----
+Version: Keybase OpenPGP v1.0.0
+Comment: https://keybase.io/crypto
+
+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
+=DOtl
+-----END PGP PRIVATE KEY BLOCK-----`
+
+func TestPrivateKeyEncryption(t *testing.T) {
+
+	p, err := Create("test", "test@test.com", 1024, 0)
+	if err != nil {
+		t.Fatal("Couldn't create new PGP Keys", err)
+	}
+
+	privateKey := p["private"]
+
+	entitylist, err := openpgp.ReadArmoredKeyRing(bytes.NewBuffer(privateKey))
+	if err != nil {
+		t.Fatal("Couldn't read PrivateKey", err)
+	}
+	entity := entitylist[0]
+
+	beforeEncryption := entity.PrivateKey.PrivateKey.(*rsa.PrivateKey)
+	rsaN := beforeEncryption.N
+	rsaE := beforeEncryption.E
+	rsaD := beforeEncryption.D
+	rsaP0 := beforeEncryption.Primes[0]
+	rsaP1 := beforeEncryption.Primes[1]
+	rsaQinv := beforeEncryption.Precomputed.Qinv
+
+	passphrase := "This is a Test Passphrase!"
+	encryptedBytes, err := EncryptPrivateKeys(passphrase, privateKey)
+	if err != nil {
+		t.Fatal("Couldn't encrypt PrivateKey", err)
+	}
+
+	newEntitylist, err := openpgp.ReadArmoredKeyRing(bytes.NewBuffer(encryptedBytes))
+	if err != nil {
+		t.Fatal("Couldn't read encrypted PrivateKey", err)
+	}
+	newEntity := newEntitylist[0]
+
+	newEntity.PrivateKey.Decrypt([]byte(passphrase))
+	if err != nil {
+		t.Fatal("Couldn't decrypt PrivateKey", err)
+	}
+
+	afterEncryption := newEntity.PrivateKey.PrivateKey.(*rsa.PrivateKey)
+	rsaNrestored := afterEncryption.N
+	rsaErestored := afterEncryption.E
+	rsaDrestored := afterEncryption.D
+	rsaP0restored := afterEncryption.Primes[0]
+	rsaP1restored := afterEncryption.Primes[1]
+	rsaQinvrestored := afterEncryption.Precomputed.Qinv
+
+	if rsaN.Uint64() != rsaNrestored.Uint64() {
+		t.Fatal("N parameter mismatch:", rsaN, rsaNrestored)
+	}
+	if rsaE != rsaErestored {
+		t.Fatal("E parameter mismatch:", rsaE, rsaErestored)
+	}
+	if rsaD.Uint64() != rsaDrestored.Uint64() {
+		t.Fatal("D parameter mismatch:", rsaD, rsaDrestored)
+	}
+	if rsaP0.Uint64() != rsaP0restored.Uint64() {
+		t.Fatal("Prime 0 parameter mismatch:", rsaP0, rsaP0restored)
+	}
+	if rsaP1.Uint64() != rsaP1restored.Uint64() {
+		t.Fatal("Prime 1 parameter mismatch:", rsaP1, rsaP1restored)
+	}
+	if rsaQinv.Uint64() != rsaQinvrestored.Uint64() {
+		t.Fatal("Qinv parameter mismatch:", rsaQinv, rsaQinvrestored)
+	}
+
+	afterEncryption.Validate()
+	if err != nil {
+		t.Fatal("PrivateKey validation failed: ", err)
 	}
 }
 
@@ -170,17 +405,17 @@ jM5uz++Jltj5+HQ=
 =fYLh
 -----END PGP PRIVATE KEY BLOCK-----`
 
-func TestExpiry(t *testing.T){
+func TestExpiry(t *testing.T) {
 	//keyPair, err := Create("", "", 896, 2 * time.Second)
-	keyPair := map[string][]byte{"public":[]byte(expiredPublic), "private":[]byte(expiredPrivate)}
+	keyPair := map[string][]byte{"public": []byte(expiredPublic), "private": []byte(expiredPrivate)}
 	s := []byte("encrypt already!")
 	myBytes, err := Encrypt(s, [][]byte{keyPair["public"]})
-	if err == nil{
+	if err == nil {
 		t.Error("Ecryption error: ", err)
 	}
 	//fmt.Println("encrypted: ", string(myBytes))
 	myBytes, err = Decrypt(myBytes, nil, keyPair["private"])
-	if err == nil{
+	if err == nil {
 		t.Error("decrypt error : ", err)
 	}
 	if bytes.Equal(myBytes, s) {
@@ -190,7 +425,7 @@ func TestExpiry(t *testing.T){
 
 func TestReadIdentity(t *testing.T) {
 	myBytes, err := ReadIdentity([][]byte{[]byte(_publicKey), []byte(_pubKey2), []byte(_pubKey3)})
-	if err != nil{
+	if err != nil {
 		t.Error("Reading identity error: ", err)
 	}
 	if myBytes[0]["name"] != "ave" || myBytes[0]["email"] != "av@futuretek.ch" {
@@ -282,29 +517,27 @@ y/pU2zhBGpLT8RQ=
 func TestSign(t *testing.T) {
 	data := []byte("omfg sign already!")
 	myBytes, err := Sign(data, nil, [][]byte{[]byte(sigPriv)})
-	if err != nil{
+	if err != nil {
 		t.Error("Signing error: ", err)
 	}
 	valid, err := Verify(data, []byte(myBytes), [][]byte{[]byte(sigPub)})
-	if err != nil || !valid{
+	if err != nil || !valid {
 		t.Error("Verify error: ", err)
 	}
 }
-
-
 
 func TestVerify(t *testing.T) {
 	valid, err := Verify([]byte("abc"), []byte(sigMsg2), [][]byte{[]byte(sigPub)})
-	if err != nil || !valid{
+	if err != nil || !valid {
 		t.Error("Verify error: ", err)
 	}
 	valid, err = VerifyBundle([]byte(sigMsg), [][]byte{[]byte(sigPub)})
-	if err != nil || !valid{
+	if err != nil || !valid {
 		t.Error("Verify error: ", err)
 	}
 }
 
-const _mySignature =`
+const _mySignature = `
 -----BEGIN PGP SIGNATURE-----
 
 wqUEAAEIABAFAljclusJECgqilxK/fP0AAB9uwRIcSbgzJOalzbUOjcYzIEqR9zX
@@ -316,11 +549,11 @@ sQDy4JdFtg4kZ+1GIA2K6laj1H0iFsQ=
 
 func TestEncrypt(t *testing.T) {
 	myBytes, err := Encrypt([]byte("omfg encrypt already!"), [][]byte{[]byte(_publicKey), []byte(_pubKey2), []byte(_pubKey3)})
-	if err != nil{
+	if err != nil {
 		t.Error("Ecryption error: ", err)
 	}
 	myBytes, err = Decrypt(myBytes, []byte("abc"), []byte(privateKey1))
-	if err != nil{
+	if err != nil {
 		t.Error("decrypt error : ", err)
 	}
 	if !bytes.Equal(myBytes, []byte("omfg encrypt already!")) {
@@ -352,7 +585,7 @@ f6EaUoMopCxpvwKHuak=
 -----END PGP PUBLIC KEY BLOCK-----
 
 `
-const _pubKey2 =`
+const _pubKey2 = `
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: OpenPGP.js v2.4.0
 Comment: http://openpgpjs.org
@@ -375,7 +608,7 @@ uRXs4sxULhAczEVJRxyS1iB0XVccOs5JiAfT7nLMnq0cDZLhX31c56qrpkSr
 j3iMcyGejLSjAtsBKdEp
 =CLn1
 -----END PGP PUBLIC KEY BLOCK-----`
-const _pubKey3 =`
+const _pubKey3 = `
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: OpenPGP.js v2.4.0
 Comment: http://openpgpjs.org
@@ -399,10 +632,9 @@ j8T2W6CLnF/kMsV1IvdwZlJ5zwSc
 =Vs5y
 -----END PGP PUBLIC KEY BLOCK-----`
 
-
 func TestDecrypt(t *testing.T) {
 	myBytes, err := Decrypt([]byte(encryptedMessage1), []byte("abc"), []byte(privateKey1))
-	if err != nil{
+	if err != nil {
 		t.Error("decrypt error : ", err)
 	}
 	if !bytes.Equal(myBytes, []byte("fuck yeah!")) {
@@ -415,7 +647,7 @@ func TestDecrypt(t *testing.T) {
 	}
 }
 
-func TestReadPublicKey(t *testing.T){
+func TestReadPublicKey(t *testing.T) {
 	a, err := ReadPublicKey([]byte("abc"), []byte(sigPriv))
 	if err != nil {
 		t.Error("Reading public key failed !!!", err)
@@ -425,7 +657,7 @@ func TestReadPublicKey(t *testing.T){
 	}
 }
 
-func TestWriteIdentity(t *testing.T){
+func TestWriteIdentity(t *testing.T) {
 	a, err := WriteIdentity([]byte("abc"), []byte(privateKey1), "thenewname", "", "newemail")
 	if err != nil {
 		t.Error("Writting identity failed !!!", err)
@@ -440,8 +672,7 @@ func TestWriteIdentity(t *testing.T){
 	}
 }
 
-var privateKey1 string =
-	`-----BEGIN PGP PRIVATE KEY BLOCK-----
+var privateKey1 string = `-----BEGIN PGP PRIVATE KEY BLOCK-----
 Version: OpenPGP.js v2.4.0
 Comment: http://openpgpjs.org
 

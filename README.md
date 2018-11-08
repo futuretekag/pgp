@@ -31,5 +31,8 @@ func main(){
     keyPairMap, err :=  pgp.WriteIdentity([]byte("abc"), []byte(privateKey1), "thenewname", "", "newemail")
 
     pubKeyBytes, err := pgp.ReadPublicKey([]byte("abc"), []byte(sigPriv))
+
+    encPrivKey, err  := pgp.EncryptPrivateKeys(passphrase, privatekeyBytes)
+
 }
 ```
